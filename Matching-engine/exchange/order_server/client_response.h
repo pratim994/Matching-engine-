@@ -18,7 +18,7 @@ using namespace common;
         CANCEL_REJECTED = 4
     };
     
-    inline std::string  ClientResponseTypeToString(ClientResponseType type){
+    inline std::string  clientResponseTypeToString(ClientResponseType type){
         switch (type){
             case  ClientResponseType::ACCEPTED:
                 return "ACCEPTED";
@@ -66,8 +66,23 @@ using namespace common;
 
             ss << "MEClientResponse"
             << "["
-            << "type:" << ClientResponseTypeToString(type_);
-            << "clientid" << clientIdToString(client_id_)
-            << "cp"
+            << "type:" << clientResponseTypeToString(type_);
+            << "client:" << clientIdToString(client_id_)
+            << "ticker:" << tickerIdToString(ticker_id_)
+            << "coid:" << orderIdTostring(client_order_id_)
+            << "moid:" << orderIdTostring(market_order_id_)
+            << "side:" << sideToString(side_)
+            << "exec_qty :" << qtyToString(exec_qty_)
+            << "leaves_qty:" << qtyToString(leaves_qty_)
+            << "price :" << priceToString(price_)
+            << "]";
+
+            return ss.str();
+
+
        }
-    }
+    };
+
+    #pragma pack(pop)
+
+    typedef LFQueue<MEClientResponse> ClientRequestLfQueue;
