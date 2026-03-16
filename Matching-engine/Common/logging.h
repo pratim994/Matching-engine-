@@ -129,5 +129,109 @@ namespace Common {
 
             queue_.updateWriteIndex();
          }
-     }
+
+         auto pushValue(const char value) noexcept {
+            pushValue(LogElement{LogType::CHAR, (.c = value)});
+         }
+        
+        auto pushValue(const int value ) noexcept {
+            pushValue(LogElement{LogType::INT, {.i = value}});
+        } 
+
+        auto pushValue(const long value) noexcept {
+            pushValue(LogElement{LogType::LONG_INTEGER, {.l = value}});
+
+        }
+
+        auto pushValue(const long long value) noexcept {
+            pushValue(LogElement{LogType::LONG_LONG_INTEGER, {.ll = value}});
+        }
+
+        auto pushValue(const unsigned value) noexcept {
+            pushValue(LogElement{LogType::UNSIGNED_INTEGER, {.u = value}});
+
+        }
+
+        auto pushValue(const unsigned long value) noexcept {
+            pushValue(LogElement{LogType::UNSIGNED_LONG_INTEGER, {.ul = value}});
+        }
+
+        auto pushValue(const unsigned long long value) noexcept {
+            pushValue(LogElement{LogType::UNSIGNED_LONG_LONG_INTEGER, {.ull = value}});
+        }
+
+        auto pushValue(const float value) noexcept {
+            pushValue(LogElement{LogType::FLOAT, {.f = value}});
+        }
+
+        auto pushValue(const double value) noexcept {
+            pushValue(LogValue{LogType::DOUBLE, {.d = value}});
+        }   
+
+        auto pushValue(const char *value) noexcept {
+            while(*value) {
+                pushValue(*value);
+                ++value;
+            }
+        }
+        auto pushValue(const std::string &value) noexcept {
+            pushValue(value.c_str());
+        }
+
+        template<typename T, typename... A>
+
+        auto log(const char *s, cosntT &value, A.. args) noexcept {
+            while(*s) {
+                if(*s == '%'){
+                    if(UNLIKELY(*(s+1) == '%')){
+                        ++s;
+
+                    } else {
+                        pushValue(value);
+                        log(s+1, args...);
+                        return;
+                    }
+                }
+                pushValue(*s++);
+            }
+            FATAL("extra arguments provided to log()");
+        }
+        
+        auto log(const char *s) noexcept {
+            while(*s) {
+                if(*s == '%') {
+                    if(UNLIKELY(*(s+1) == '%')) {
+                        ++s;
+
+                    } else {
+                        FATAL("missing arguments to log()");
+                    }
+                }
+                pushValue(*s++);
+            }
+        }
+        Logger() = delete;
+
+        Logger(const Logger &) =  delete ;
+
+        Logger(const Logger &&) = delete;
+
+        Logger &operator = (const Logger &) =  delete;
+
+        Logger &operator = (const LOgger &&) = delete ;
+
+
+        private:
+
+            const std::string file_name_;
+
+            std::ofstream file_;
+
+            LFQueue<LogElement> queue_;
+
+            std::atomic<bool> running_ = {true};
+
+            std::thread *logger_thread_ = nullptr;
+
+     };
 }
