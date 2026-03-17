@@ -74,9 +74,7 @@ namespace Exchange {
 
             Logger *logger_ = nullptr;
 
-            typedef std::array<MEOrderBook *, ME_MAX_TICKERS_>
         
-            OrderBookHashMap;
 
 
         private:
@@ -176,7 +174,49 @@ namespace Exchange {
             }
             }
 
-        };
+        }
 
-    }
+        auto removeOrdersAtPrice(Side side , Price price) noexcept {
+
+            const auto best_orders_by_price = (side == Side::BUY ? bids_by_price_ : asks_by_price_);
+
+            auto orders_at_price = getOrderAtPrice(price);
+
+            if(UNLIKELY(orders_at_price->next_entry_ == orders_at_price)){
+
+                (side == Side::BUY ? bids_by_price_ : asks_by_price_) = nullptr;
+            } else {
+
+                orders_at_price->prev_entry_->next_entry_ = orders_at_price->next_entry_;
+
+                orders_at_price->next_entry_->prev_entry_ = orders_at_price->prev_entry_;
+
+                if(orders_at_price == best_orders_by_price){
+
+                    (side == Side::BUY ? bids_by_price_ : asks_by_price_) = orders_at_price->next_entry_ ;
+
+
+                }
+
+                orders_at_price->prev_entry_ = orders_at_price->next_entry_ = nullptr;
+
+
+            }
+            price_orders_at_price_.at(priceToIndex(price)) = nullptr;
+
+
+            orders_at_price_pool_.deallocate(orders_at_price);
+
+        }
+
+        //to do tommorrow getNextPriority 
+        // matcher function
+        //check for match
+        //orderRemoval
+        //addition of order method
+
+
+    };  
+    
+typedef std::array<MEOrderBook *, ME_MAX_TICKERS_> OrderBookHashMap;
 }
