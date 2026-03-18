@@ -90,7 +90,7 @@ namespace Exchange {
                 return (price % ME_MAX_PRICE_LEVELS);
             }
 
-            auto getOrderAtPrice(Price price) const noexcept -> MEOrdersAtPrice{
+            auto getOrdersAtPrice(Price price) const noexcept -> MEOrdersAtPrice{
 
                     return price_orders_at_price_.at(priceToIndex(price));
             }
@@ -180,7 +180,7 @@ namespace Exchange {
 
             const auto best_orders_by_price = (side == Side::BUY ? bids_by_price_ : asks_by_price_);
 
-            auto orders_at_price = getOrderAtPrice(price);
+            auto orders_at_price = getOrdersAtPrice(price);
 
             if(UNLIKELY(orders_at_price->next_entry_ == orders_at_price)){
 
@@ -209,12 +209,88 @@ namespace Exchange {
 
         }
 
-        //to do tommorrow getNextPriority 
-        // matcher function
-        //check for match
-        //orderRemoval
-        //addition of order method
+        auto getNextPriority(Price price) noexcept {
 
+            const auto orders_at_price = getOrdersAtPrice(price)
+
+            if(!orders_at_price)
+
+                return 1lu;
+
+            return orders_at_price->first_me_order_->prev_order_->priority_ + 1;
+        };
+
+      auto match(TickerId ticker_id, ClientId client_id, Side side , OrderId client_order_id, OrderId new_market_order_id, MEOrder* bidt_itr, Qty* leaves_qty) noexcept;
+
+     auto checkForMatch(ClientId client_id, OrderId client_order_id, TickerId ticker_id, SIde side,  Price price, Qty qty , Qty new_market_order_id) noexcept ;
+
+
+     auto removeOrder(MEOrder *order) noexcept {
+
+            auto orders_at_price = getOrdersAtPrice(order->price_);
+
+            if(order->prev_order_ == order) {
+
+                removeOrdersAtPrice(order->side_ , order->price_);
+            }
+            else {
+
+                const auto order_before = order->prev_order_ ;
+
+                const auto order_after = order->next_order_;
+
+                order_before->next_order_ = order_after;
+
+                order_after->prev_order_ = order_before;
+
+
+                if(orders_at_price->first_me_order_ == order){
+
+                    orders_at_price->first_me_order_ = order_after;
+
+                }
+
+                order->prev_order_ = orders->next_order_ =  nullptr;
+
+            }
+
+            cid_oid_to_order_.at(order->client_id_).at(order->client_order_id_) = nullptr;
+
+            order_pool_.deallocate(order);
+     }
+
+
+     auto addOrder(MEOrder *order) noexcept {
+
+            const auto orders_at_price = getOrdersAtPrice(order->price_);
+
+            if(!orders_at_price){
+
+                order->next_order_ = order->prev_order_ = order ;
+
+                auto new_orders_at_price =  orders_at_price_pool_.allocate(order->side_, order->price_, order , nullptr, nullptr);
+
+                addOrdersAtPrice(new_orders_at_price);
+
+            }
+            else {
+
+                auto first_order = (orders_at_price ? orders_at_price-> first_me_order_ : nnullptr);
+
+
+                first_order-> prev_order_->next_order_ = order ;
+
+                order->prev_order_= first_order->prev_order_;
+
+                order->next_order_ = first_order;
+
+                first_order-> prev_order_ = order;
+
+            }
+
+            cid_oid_to_order_.at(order->client_id_).at(order->client_order_id_)  = order;
+
+     }
 
     };  
     
