@@ -96,11 +96,9 @@ int main(int , char **)
 
         logger->log("%:% () % Starting order server ...\n", __FILE__, __LINE__, __FUNCTION__, Common::getCurrentTimeStr(&time_str_));
 
-        order_server = new Exchange::OrderServer(&clieent_requests, &client_responses, order_gw_iface, order_gw_port);
+        order_server = new Exchange::OrderServer(&clieent_requests, &client_responses, order_gw_iface, order_gw_port)
 
         order_server->start();
-
-
 
                 while(true){
                     logger->log("%:% %() % Sleeping for a few milliseconds..\n,
