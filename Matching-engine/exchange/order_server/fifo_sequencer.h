@@ -26,10 +26,52 @@ namespace Exchange {
                     }
 
 
-                    auto addCleintRequest() {}
+                    auto addCleintRequest(Nanos rx_time , const MEClientRequest &request) {
+
+                        if(pending_size >= pending_client_requests_.size()) {
+                            
+                                FATAL("Too many pending requests");
+
+                        }
+
+                        pending_client_requests_.at(pending_size_++) = std::move(RecvTimeClientRequest{rx_time, request});
+                    }
 
 
                     auto sequenceAndPublish() {
+
+                        if(UNLIKELY(!pending_size_))
+
+                            return;
+
+                        logger_->log("%:% %() % Processing % requests.\n" , __FILE__, __LINE__ , __FUNCTION__, Common::getCurrentTimeStr(&time_str_), pending_size_);
+
+
+                        std::sort(pending_client_requests_.begin() , pending_client_requests_.begin() + pending_size_);
+
+
+                        for(size_t i = 0 ; i < pending_size_ ;  i++) {
+
+                                const auto &client_request = pending_client_requests_.at(i);
+
+                                logger_->log("%:% %() % Writing RX:% Req:% FIFO.\n", __FILE__ , __LINE__, __FUNCTION__ , Commmon::getCurrentTimeStr(&time_str_),
+                            
+                                            client_request.recv_time_, client_request.request_.toString());
+
+
+                                auto next_write = incoming_requests_->getNextToWriteIndex();
+
+
+                                *next_write = std::move(client_request.request_);
+
+                                incoming_requests_->updateWriteIndex();
+
+
+                        }
+
+                        pending_size_ = 0;
+
+
 
                     }
 
@@ -46,7 +88,7 @@ namespace Exchange {
 
                     private:
 
-                        CLientRequestLFQueue *incooming_requests_ = nullptr;
+                        CLientRequestLFQueue *incoming_requests_ = nullptr;
 
                         std::string time_str_;
 
