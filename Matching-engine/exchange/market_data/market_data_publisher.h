@@ -17,7 +17,7 @@ namespace Exchange {
             
                 cosnt std::string &increment_ip ,  int increment_port);
 
-                ~MarketDataPublisher();
+                ~MarketDataPublisher(){;
 
                 stop();
 
@@ -85,6 +85,12 @@ namespace Exchange {
         Logger logger_;
 
         Common::McastSocket incremental_socket_;
+
+        SnapShotSynthesizer *snapshot_synthesizer_ = nullptr;
+
+
+        };
+
 }
 
 
