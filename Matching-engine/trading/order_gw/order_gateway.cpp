@@ -1,102 +1,110 @@
-#pragma once 
-
-#include <functional>
-
-#include "common/thread_utils.h"
-
-#include "common/macros.h"
-
-#include "common/tcp_server.h"
-
-#include "exchange/order_server/client_response.h"
-
-#include "exchange/order_server/client_request.h"
+#include "order_gateway.h"
 
 namespace Trading {
 
-    class OrderGateway {
-
-        public :
-            
-        OrderGateway(ClientId client_id , Exchange::ClientRequestLFQueue *client_requests,
+    OrderGateway::OrderGateway(ClientId client_id,
+    
+            Exchange::ClientRequestLFQueue *client_requests,
         
-                        Exchange::ClientResponseLFQueue *client_responses, 
-                    
-                        std::string ip , const std::string &iface , int port);
-                        
-                        
-        ~OrderGateway();
+            Exchange::ClientResponseLFQueue *client_resonses,
+        
+            std::string ip , const std::string &iface , int port)
 
-        stop();
-
-        using namespace std::literals::chrono_literals;
-
-        std::this_thread::sleep_for(5s);
-
-        auto start() {
+            : client_id_(client_id) , ip_(ip) , ifce_(iface) , port_(port) , outgoing_requests(client_requests),
             
-                run_ = true;
-
-                ASSERT(tcp_socket_.connect(ip_, iface_, port_ , false ) >= 0,
+            incoming_responses_(client_responses) ,
             
-                    "Unable to connect to ip :" + ip_ + "port:" + std::to_string(port_) + "on iface:" + iface_ + "error:" + std::string(std::strerror(errno)));
+            logger_("trading order gateway _" + std::to_string(client_id) + ".log" ) , tcp_socket_(logger_) {
 
-                    ASSERT(Common::createAndStartThread(-1, "Trading/orderGateway" , [this]() {run(); }) != nullptr, " failed to start ordergateway thread");
-
-        }
+                tcp_socket_.recv_callback_ = [this](auto socket , auto rx_time){ recvCallBack(socket , rx_time); };
 
 
-        auto stop() -> void {
+                auto OrderGateway::run() noexcept -> void {
 
-            run_ =  false;
+                     logger_.log("%:% %() %\n", __FILE__, __LINE__, __FUNCTION__, Common::getCurrentTimeStr(&time_str_));
+   
+                      while (run_) {
+        
+                            tcp_socket_.sendAndRecv();
 
-        }
-
-        OrderGateway() = false;
-
-        OrderGateway(const OrderGateway&) = false;
-            
-        OrderGateway(const OrderGateway&&) = false;
     
-
-        OrderGateway &operator = (const OrderGateway&) = false;
+                            for(auto client_request = outgoing_requests_->getNextToRead(); client_request; client_request = outgoing_requests_->getNextToRead()) {
     
-        OrderGateway &operator = (const OrderGateway&& ) = false;
+                                logger_.log("%:% %() % Sending cid:% seq:% %\n", __FILE__, __LINE__, __FUNCTION__,
     
-  
-        private:
+                                    Common::getCurrentTimeStr(&time_str_), client_id_, next_outgoing_seq_num_, client_request->toString());
+    
+                                    tcp_socket_.send(&next_outgoing_seq_num_, sizeof(next_outgoing_seq_num_));
+    
+                                    tcp_socket_.send(client_request, sizeof(Exchange::MEClientRequest));
+    
+                                    outgoing_requests_->updateReadIndex();
 
-            const ClientId client_id_;
 
-            std::string ip_;
+       
+                                    next_outgoing_seq_num_++;
+      }
+    }
 
-            const std::string iface_;
+                }
 
-            const int port_ = 0;
+                auto OrderGateway::recvCallBack(TCPSocket *socket , Nanos rx_time) noexcept -> void {
 
-            Exchange::ClientRequestLFQueue *outgoing_requests_ = nullptr;
+                    logger_.log("%:% %() % Received socket:% len:% %\n", __FILE__, __LINE__, __FUNCTION__, Common::getCurrentTimeStr(&time_str_), socket->socket_fd_, socket->next_rcv_valid_index_, rx_time);
 
-            Exchange::ClientResponseLFQueue *incoming_responses_ = nullptr;
+   
+                    if (socket->next_rcv_valid_index_ >= sizeof(Exchange::OMClientResponse)) {
+   
+                        size_t i = 0;
+   
+                        for (; i + sizeof(Exchange::OMClientResponse) <= socket->next_rcv_valid_index_; i += sizeof(Exchange::OMClientResponse)) {
+   
+                            auto response = reinterpret_cast<const Exchange::OMClientResponse *>(socket->inbound_data_.data() + i);
+   
+                            logger_.log("%:% %() % Received %\n", __FILE__, __LINE__, __FUNCTION__, Common::getCurrentTimeStr(&time_str_), response->toString());
 
-            volatile bool run_ = false;
 
-            Logger logger_;
+                            if(response->me_client_response_.client_id_ != client_id_) { // this should never happen unless there is a bug at the exchange.
 
-            size_t next_outgoing_seq_num_ = 1;
+                                logger_.log("%:% %() % ERROR Incorrect client id. ClientId expected:% received:%.\n", __FILE__, __LINE__, __FUNCTION__,
 
-            size_t next_exp_seq_num_ = 1;
+                                    Common::getCurrentTimeStr(&time_str_), client_id_, response->me_client_response_.client_id_);
 
-            Common::TCPSocket tcp_socket_;
+                                    continue;
 
-            
+                                }
 
-        private:
+                                if(response->seq_num_ != next_exp_seq_num_) { // this should never happen since we use a reliable TCP protocol, unless there is a bug at the exchange.
 
-            auto run() noexcept -> void;
+                                    logger_.log("%:% %() % ERROR Incorrect sequence number. ClientId:%. SeqNum expected:% received:%.\n", __FILE__, __LINE__, __FUNCTION__,
 
-            auto recvCallBack(TCPSocket *socket, Nanos rx_time) noexcept -> void;
-  
-  
-    };
+                                        Common::getCurrentTimeStr(&time_str_), client_id_, next_exp_seq_num_, response->seq_num_);
 
-}
+                                        continue;
+
+                                    }
+
+
+     
+                                    ++next_exp_seq_num_;
+
+
+                                    auto next_write = incoming_responses_->getNextToWriteTo();
+
+                                    *next_write = std::move(response->me_client_response_);
+
+                                    incoming_responses_->updateWriteIndex();
+
+                                }
+
+                                memcpy(socket->inbound_data_.data(), socket->inbound_data_.data() + i, socket->next_rcv_valid_index_ - i);
+
+                                socket->next_rcv_valid_index_ -= i;
+
+                            }
+
+                        }
+
+
+                }
+            }
