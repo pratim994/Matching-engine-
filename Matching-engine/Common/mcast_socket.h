@@ -14,7 +14,7 @@ namespace Common {
         struct McastSocket {
 
             McastSocket(Logger &logger) :
-            logger_(lohher)
+            logger_(logger)
             {
                     outbound_data_.resize(McastBufferSize);
 

@@ -41,6 +41,18 @@ namespace Common {
                     store_[elem_index].is_free_ = true;
                 }
 
+                MemPool() = delete;
+
+                MemPool(const MemPool &) = delete;
+
+                MemPool(const && ) = delete;
+                
+                MemPool &operator = (const MemPool &) = delete;
+    
+                MemPool &operator =(const MemPool &) = delete;
+            
+        private: 
+
                 auto updateNextFreeIndex() noexcept {
                     const auto initial_free_index = next_free_index_;
 
@@ -58,16 +70,6 @@ namespace Common {
                         }
                     }
                 }
-
-                MemPool() = delete;
-
-                MemPool(const MemPool &) = delete;
-
-                MemPool(const && ) = delete;
-                
-                MemPool &operator = (const MemPool &) = delete;
-    
-                MemPool &operator =(const MemPool &) = delete;
 
 
 
