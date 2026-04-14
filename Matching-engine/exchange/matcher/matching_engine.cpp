@@ -13,7 +13,8 @@ namespace Exchange {
 
 
     MatchingEngine::~MatchingEngine(){
-        run_ =false;
+  
+        stop();
 
         using namespace std::literals::chrono_literals;
 

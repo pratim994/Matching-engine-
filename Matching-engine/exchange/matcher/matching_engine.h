@@ -96,17 +96,6 @@ namespace Exchange {
 
 
 
-            MatchingEngine() = delete;
-
-            MatchingEngine(const MatchingEngine &) = delete;
-
-            MatchingEngine(const MatchingEngine &&) = delete;
-
-
-            MatchingEngine &operator=(const MatchingEngine &) = delete;
-
-            
-            MatchingEngine &&operator=(const MatchingEngine &) = delete;
 
             auto run() noexecpt  {
                 logger_.log();
@@ -133,6 +122,17 @@ namespace Exchange {
             }
 
 
+            MatchingEngine() = delete;
+
+            MatchingEngine(const MatchingEngine &) = delete;
+
+            MatchingEngine(const MatchingEngine &&) = delete;
+
+
+            MatchingEngine &operator=(const MatchingEngine &) = delete;
+
+            
+            MatchingEngine &&operator=(const MatchingEngine &) = delete;
         private:
 
             OrderBookHashMap   ticker_order_book_;
