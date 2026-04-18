@@ -102,9 +102,6 @@ namespace Trading {
                 auto checkSnapshotSync() -> void;
    
    
-   
-   
-   
         }
 }
 

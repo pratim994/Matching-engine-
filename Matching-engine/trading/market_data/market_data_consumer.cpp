@@ -331,6 +331,8 @@ namespace Trading {
                         *next_write = std::move(request->me_market_update_);
 
                         incoming_md_updates_->updateWriteIndex();
+
+                        TTT_MEASURE(T8_MarketDataConsumer_LFQueue_write, logger_);
                 }
             }
 
@@ -339,6 +341,7 @@ namespace Trading {
             socket->next_rcv_valid_index_ -= i;
 
         }
+            END_MEASURE(Trading_MarketDataConsumer_recvCallback, logger_);
         }
 
 }
