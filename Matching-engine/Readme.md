@@ -1,13 +1,7 @@
-# 🚀 Low Latency Trading Engine (C++)
+# Low Latency Trading Engine (C++)
 
-## 📌 Overview
-This project is a high-performance, low-latency trading system inspired by *"Building Low Latency Applications in C++" by Sourav Ghosh*. It simulates a simplified exchange and trading clients, focusing on deterministic performance, minimal latency, and efficient memory usage.
-
-The system consists of:
-- **Exchange Engine** – order matching and market state
-- **Trading Clients** – maker/taker/random strategies
-- **Benchmark Suite** – performance evaluation
-- **Profiling Support** – perf + Python/IPython analysis
+## Overview
+This project is a high-performance, low-latency trading system . It simulates a simplified exchange and trading clients, focusing on deterministic performance, minimal latency, and efficient memory usage.
 
 ---
 
@@ -22,7 +16,7 @@ The system consists of:
 ---
 
 
-## ⚡ Key Optimizations
+##  Key Optimizations
 
 ### 1. Memory Management
 - Pre-allocation of data structures
@@ -53,7 +47,7 @@ The system consists of:
 
 ---
 
-## 📊 Benchmarking
+## Benchmarking
 
 Run benchmarks:
 
@@ -68,7 +62,7 @@ Benchmarks include:
 
 ---
 
-## 🛠️ Build Instructions
+##  Build Instructions
 
 ### Requirements
 - C++20 compatible compiler
@@ -88,7 +82,7 @@ bash scripts/run_exchange_and_clients.sh
 ```
 ---
 
-## 🧹 Git Hygiene
+## Git Hygiene
 
 Ignored files:
 - `build/`, `cmake-build-*`
@@ -98,10 +92,9 @@ Ignored files:
 
 ---
 
-## 🚧 Future Improvements
+##  Future Improvements
 
-- Lock-free queues (e.g., ring buffers)
-- Kernel bypass networking (DPDK / io_uring)
+- Kernel bypass networking (DPDK / openOnLoad )
 - NUMA-aware memory allocation
 - Multi-core scaling strategies
 - Persistent order book snapshots
