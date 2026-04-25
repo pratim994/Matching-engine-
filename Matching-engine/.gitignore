@@ -1,6 +1,51 @@
 
-.cache/
+# Build directories
 build/
-*.o
+cmake-build-*/
+CMakeFiles/
+CMakeCache.txt
+
+# Generated binaries
 *.out
+*.exe
+*.o
+*.so
+*.a
+
+# Logs
 *.log
+logs/
+*.txt
+
+# CMake / Ninja artifacts
+build.ninja
+.ninja_log
+.ninja_deps
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+
+
+# Perf profiling
+perf.data*
+perf.data.old
+
+# Profiling outputs
+*.prof
+*.pstats
+*.lprof
+
+# Flamegraphs / reports
+*.svg
+*.html
+
+# Python cache 
+__pycache__/
+*.pyc
+.ipynb_checkpoints/

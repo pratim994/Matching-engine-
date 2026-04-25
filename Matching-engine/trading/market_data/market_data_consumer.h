@@ -1,113 +1,77 @@
-#pragma once 
+#pragma once
 
 #include <functional>
-
 #include <map>
 
-#include "common/macros.h"
-
 #include "common/thread_utils.h"
-
 #include "common/lf_queue.h"
-
+#include "common/macros.h"
 #include "common/mcast_socket.h"
 
 #include "exchange/market_data/market_update.h"
 
 namespace Trading {
+  class MarketDataConsumer {
+  public:
+    MarketDataConsumer(Common::ClientId client_id, Exchange::MEMarketUpdateLFQueue *market_updates, const std::string &iface,
+                       const std::string &snapshot_ip, int snapshot_port,
+                       const std::string &incremental_ip, int incremental_port);
 
-    class MarketDataConsumer {
+    ~MarketDataConsumer() {
+      stop();
 
-        public :
+      using namespace std::literals::chrono_literals;
+      std::this_thread::sleep_for(5s);
+    }
 
-            MarketDataConsumer(Common::ClientId client_id, Exchange::MEMarketUpdateLFQueue *market_updates, const std::string &iface,
-            
-                const std::string &snapshot_ip , int snapshot_port ,
-            
-                const std::String &incremental_ip , int incremental_port);
+    auto start() {
+      run_ = true;
+      ASSERT(Common::createAndStartThread(-1, "Trading/MarketDataConsumer", [this]() { run(); }) != nullptr, "Failed to start MarketData thread.");
+    }
 
-            ~MarketDataConsumer(){
+    auto stop() -> void {
+      run_ = false;
+    }
 
-                stop();
+    MarketDataConsumer() = delete;
 
-                using namespace std::literals::Chrono_literals;
+    MarketDataConsumer(const MarketDataConsumer &) = delete;
 
-                std::this_thread::sleep_for(5s);
-            }
+    MarketDataConsumer(const MarketDataConsumer &&) = delete;
 
-            auto start() {
+    MarketDataConsumer &operator=(const MarketDataConsumer &) = delete;
 
-                run_ = true;
+    MarketDataConsumer &operator=(const MarketDataConsumer &&) = delete;
 
-                ASSERT(Common::createAndStartThread(-1, "Trading/MarketDataConsumer", [this](){ run();}) !=  nullptr, "Failed to start MarketData Thread.");
+  private:
+    size_t next_exp_inc_seq_num_ = 1;
 
-            }
+    Exchange::MEMarketUpdateLFQueue *incoming_md_updates_ = nullptr;
 
-            auto stop() ->  void {
+    volatile bool run_ = false;
 
-                run_ = false;
-            }
+    std::string time_str_;
+    Logger logger_;
 
-            MarketDataConsumer() = delete;
+    Common::McastSocket incremental_mcast_socket_, snapshot_mcast_socket_;
 
+    bool in_recovery_ = false;
 
-            MarketDataConsumer(const MarketDataConsumer&) = delete;
+    const std::string iface_, snapshot_ip_;
+    const int snapshot_port_;
 
-            MarketDataConsumer(const MarketDataConsumer &&) = delete;
+    typedef std::map<size_t, Exchange::MEMarketUpdate> QueuedMarketUpdates;
+    QueuedMarketUpdates snapshot_queued_msgs_, incremental_queued_msgs_;
 
+  private:
+    auto run() noexcept -> void;
 
-            MarketDataConsumer &operator = (const MarketDataConsumer &) = delete;
+    auto recvCallback(McastSocket *socket) noexcept -> void;
 
-            MarketDataConsumer &operator = (const MarketDataConsumer &&) = delete;
+    auto queueMessage(bool is_snapshot, const Exchange::MDPMarketUpdate *request);
 
-   
-            private:
+    auto startSnapshotSync() -> void;
 
-                size_t next_exp_inc_seq_num_ = 1;
-
-                Exchnage::MEMarketUpdateLFQueue *incominh_md_updates_ = nullptr;
-
-                volatile bool run_ = false;
-
-                std::string time_str;
-                
-                Logger logger_;
-
-                Common::McastSocket incremental_mcast_socket_ , snapshot_mcast_socket_;
-
-                bool in_recovery_ = false;
-
-                const std::string iface_ , snapshot_ip_;
-
-                const int snapshot_port_;
-
-                
-                typedef std::map<size_t, Exchange::MEMarketUpdate> QueuedMarketUpdates;
-
-                QueuedMarketUpdates snapshot_queued_msgs_ , incremental_queued_msgs_;
-
-
-
-            private:
-
-                auto run() noexcept -> void;
-
-                auto recvCallback(McastSocket *socket) noexcept -> void 
-
-                auto queuedMessage(bool is_snapshot, const Exchnage::MDPMarketUpdate *request);
-
-
-                auto startSnapshotSync() -> void;
-
-                auto checkSnapshotSync() -> void;
-   
-   
-        }
+    auto checkSnapshotSync() -> void;
+  };
 }
-
-
-
-
-
-
-

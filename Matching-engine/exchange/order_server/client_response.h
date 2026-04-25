@@ -2,87 +2,83 @@
 
 #include <sstream>
 
-#include "common/types.h";
-#include "common/lf_queue.h";
+#include "common/types.h"
+#include "common/lf_queue.h"
 
+using namespace Common;
 
-using namespace common;
+namespace Exchange {
+  enum class ClientResponseType : uint8_t {
+    INVALID = 0,
+    ACCEPTED = 1,
+    CANCELED = 2,
+    FILLED = 3,
+    CANCEL_REJECTED = 4
+  };
 
-#pragma pack(push, 1);
-
-    enum class ClientResponseType : unint8_t {
-        INVALID = 0,
-        ACCEPTED = 1,
-        CANCELED = 2,
-        FILLED = 3,
-        CANCEL_REJECTED = 4
-    };
-    
-    inline std::string  clientResponseTypeToString(ClientResponseType type){
-        switch (type){
-            case  ClientResponseType::ACCEPTED:
-                return "ACCEPTED";
-
-            case ClientResponseType::CANCELLED:
-                return "CANCELLED";
-
-
-                case ClientResponseType::FILLED:
-                   return "FILLED";
-
-            case ClientResponseType::CANCEL_REJECTED:
-                    return "CANCEL_REJECTED";
-
-            case ClientResponseType::INVALID:
-                    return "INVALID";
-
-        }
-            return "UNKOWN";
+  inline std::string clientResponseTypeToString(ClientResponseType type) {
+    switch (type) {
+      case ClientResponseType::ACCEPTED:
+        return "ACCEPTED";
+      case ClientResponseType::CANCELED:
+        return "CANCELED";
+      case ClientResponseType::FILLED:
+        return "FILLED";
+      case ClientResponseType::CANCEL_REJECTED:
+        return "CANCEL_REJECTED";
+      case ClientResponseType::INVALID:
+        return "INVALID";
     }
+    return "UNKNOWN";
+  }
 
+#pragma pack(push, 1)
 
+  struct MEClientResponse {
+    ClientResponseType type_ = ClientResponseType::INVALID;
+    ClientId client_id_ = ClientId_INVALID;
+    TickerId ticker_id_ = TickerId_INVALID;
+    OrderId client_order_id_ = OrderId_INVALID;
+    OrderId market_order_id_ = OrderId_INVALID;
+    Side side_ = Side::INVALID;
+    Price price_ = Price_INVALID;
+    Qty exec_qty_ = Qty_INVALID;
+    Qty leaves_qty_ = Qty_INVALID;
 
-    struct MEClientResponse {
-        ClientResponseType type_ = ClientResponseType::INVALID;
+    auto toString() const {
+      std::stringstream ss;
+      ss << "MEClientResponse"
+         << " ["
+         << "type:" << clientResponseTypeToString(type_)
+         << " client:" << clientIdToString(client_id_)
+         << " ticker:" << tickerIdToString(ticker_id_)
+         << " coid:" << orderIdToString(client_order_id_)
+         << " moid:" << orderIdToString(market_order_id_)
+         << " side:" << sideToString(side_)
+         << " exec_qty:" << qtyToString(exec_qty_)
+         << " leaves_qty:" << qtyToString(leaves_qty_)
+         << " price:" << priceToString(price_)
+         << "]";
+      return ss.str();
+    }
+  };
 
-       ClientId  client_id_ =  ClientId_INVALID:
+  struct OMClientResponse {
+    size_t seq_num_ = 0;
+    MEClientResponse me_client_response_;
 
-       TickerId ticker_id_ = TickerId_INVALID;
+    auto toString() const {
+      std::stringstream ss;
+      ss << "OMClientResponse"
+         << " ["
+         << "seq:" << seq_num_
+         << " " << me_client_response_.toString()
+         << "]";
+      return ss.str();
+    }
+  };
 
-       OrderId  order_id_ = OrderId_INVALID;
+#pragma pack(pop) 
 
-       Side side_ = Side_INVALID;
-
-       Price price_ = Price_INVALID;
-
-       Qty exec_qty = Qty_INVALID;
-
-       Qty leaves_qty = Qty_INVALID;
-
-
-       auto toString() const {
-            
-            std::Stringstream ss;
-
-            ss << "MEClientResponse"
-            << "["
-            << "type:" << clientResponseTypeToString(type_);
-            << "client:" << clientIdToString(client_id_)
-            << "ticker:" << tickerIdToString(ticker_id_)
-            << "coid:" << orderIdTostring(client_order_id_)
-            << "moid:" << orderIdTostring(market_order_id_)
-            << "side:" << sideToString(side_)
-            << "exec_qty :" << qtyToString(exec_qty_)
-            << "leaves_qty:" << qtyToString(leaves_qty_)
-            << "price :" << priceToString(price_)
-            << "]";
-
-            return ss.str();
-
-
-       }
-    };
-
-    #pragma pack(pop)
-
-    typedef LFQueue<MEClientResponse> ClientRequestLfQueue;
+  typedef LFQueue<MEClientResponse> ClientResponseLFQueue;
+}

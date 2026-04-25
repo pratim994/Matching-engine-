@@ -1,0 +1,13 @@
+session_info-1.0.1.dist-info/INSTALLER,sha256=zuuue4knoyJ-UwPPXg8fezS7VCrXJQrAP7zeNuwvFQg,4
+session_info-1.0.1.dist-info/METADATA,sha256=ALy-2iOxsZUK4IwR5lKRmd5jUsesZyXZ8OZBQbIuG0A,5058
+session_info-1.0.1.dist-info/RECORD,,
+session_info-1.0.1.dist-info/REQUESTED,sha256=47DEQpj8HBSa-_TImW-5JCeuQeRkm5NMpJWZG3hSuFU,0
+session_info-1.0.1.dist-info/WHEEL,sha256=CmyFI0kx5cdEMTLiONQRbGQwjIoR1aIYB7eCAQ4KPJ0,91
+session_info-1.0.1.dist-info/licenses/LICENSE,sha256=Lx6jAFjxdhc86XyZS4dkfoFgGeD8TyjUCWjDGJTuh24,1512
+session_info-1.0.1.dist-info/top_level.txt,sha256=4DdDq3aM3I2PWfV-TRCDUqDXuHiiQyevA_CBHacuMVY,13
+session_info/__init__.py,sha256=D0CaBnU_-P78bvUPdEIFpQHuSEOOZKFutcTi-VwRKdk,117
+session_info/__pycache__/__init__.cpython-312.pyc,,
+session_info/__pycache__/_version.cpython-312.pyc,,
+session_info/__pycache__/main.cpython-312.pyc,,
+session_info/_version.py,sha256=Nd0zmq2LUbmR4CFikNrbwwk4OWniNnfxnk9o30g5c14,498
+session_info/main.py,sha256=kStZ7DoAiHsR7xS0qvLa5M1MVWlzouKYKd28IUmaXdM,13712

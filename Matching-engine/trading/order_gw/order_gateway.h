@@ -1,103 +1,74 @@
-
-#pragma once 
+#pragma once
 
 #include <functional>
 
 #include "common/thread_utils.h"
-
 #include "common/macros.h"
-
 #include "common/tcp_server.h"
 
+#include "exchange/order_server/client_request.h"
 #include "exchange/order_server/client_response.h"
 
-#include "exchange/order_server/client_request.h"
-
 namespace Trading {
+  class OrderGateway {
+  public:
+    OrderGateway(ClientId client_id,
+                 Exchange::ClientRequestLFQueue *client_requests,
+                 Exchange::ClientResponseLFQueue *client_responses,
+                 std::string ip, const std::string &iface, int port);
 
-    class OrderGateway {
+    ~OrderGateway() {
+      stop();
 
-        public :
-            
-        OrderGateway(ClientId client_id , Exchange::ClientRequestLFQueue *client_requests,
-        
-                        Exchange::ClientResponseLFQueue *client_responses, 
-                    
-                        std::string ip , const std::string &iface , int port);
-                        
-                        
-        ~OrderGateway();
+      using namespace std::literals::chrono_literals;
+      std::this_thread::sleep_for(5s);
+    }
 
-        stop();
+    auto start() {
+      run_ = true;
+      ASSERT(tcp_socket_.connect(ip_, iface_, port_, false) >= 0,
+             "Unable to connect to ip:" + ip_ + " port:" + std::to_string(port_) + " on iface:" + iface_ + " error:" + std::string(std::strerror(errno)));
+      ASSERT(Common::createAndStartThread(-1, "Trading/OrderGateway", [this]() { run(); }) != nullptr, "Failed to start OrderGateway thread.");
+    }
 
-        using namespace std::literals::chrono_literals;
+    auto stop() -> void {
+      run_ = false;
+    }
 
-        std::this_thread::sleep_for(5s);
+    OrderGateway() = delete;
 
-        auto start() {
-            
-                run_ = true;
+    OrderGateway(const OrderGateway &) = delete;
 
-                ASSERT(tcp_socket_.connect(ip_, iface_, port_ , false ) >= 0,
-            
-                    "Unable to connect to ip :" + ip_ + "port:" + std::to_string(port_) + "on iface:" + iface_ + "error:" + std::string(std::strerror(errno)));
+    OrderGateway(const OrderGateway &&) = delete;
 
-                    ASSERT(Common::createAndStartThread(-1, "Trading/orderGateway" , [this]() {run(); }) != nullptr, " failed to start ordergateway thread");
+    OrderGateway &operator=(const OrderGateway &) = delete;
 
-        }
+    OrderGateway &operator=(const OrderGateway &&) = delete;
 
+  private:
+    const ClientId client_id_;
 
-        auto stop() -> void {
+    std::string ip_;
+    const std::string iface_;
+    const int port_ = 0;
 
-            run_ =  false;
+    Exchange::ClientRequestLFQueue *outgoing_requests_ = nullptr;
 
-        }
+    Exchange::ClientResponseLFQueue *incoming_responses_ = nullptr;
 
-        OrderGateway() = false;
+    volatile bool run_ = false;
 
-        OrderGateway(const OrderGateway&) = false;
-            
-        OrderGateway(const OrderGateway&&) = false;
-    
+    std::string time_str_;
+    Logger logger_;
 
-        OrderGateway &operator = (const OrderGateway&) = false;
-    
-        OrderGateway &operator = (const OrderGateway&& ) = false;
-    
-  
-        private:
+    size_t next_outgoing_seq_num_ = 1;
+    size_t next_exp_seq_num_ = 1;
 
-            const ClientId client_id_;
+    Common::TCPSocket tcp_socket_;
 
-            std::string ip_;
+  private:
+    auto run() noexcept -> void;
 
-            const std::string iface_;
-
-            const int port_ = 0;
-
-            Exchange::ClientRequestLFQueue *outgoing_requests_ = nullptr;
-
-            Exchange::ClientResponseLFQueue *incoming_responses_ = nullptr;
-
-            volatile bool run_ = false;
-
-            Logger logger_;
-
-            size_t next_outgoing_seq_num_ = 1;
-
-            size_t next_exp_seq_num_ = 1;
-
-            Common::TCPSocket tcp_socket_;
-
-            
-
-        private:
-
-            auto run() noexcept -> void;
-
-            auto recvCallBack(TCPSocket *socket, Nanos rx_time) noexcept -> void;
-  
-  
-    };
-
+    auto recvCallback(TCPSocket *socket, Nanos rx_time) noexcept -> void;
+  };
 }

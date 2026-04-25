@@ -8,8 +8,7 @@ namespace Trading {
                            Exchange::ClientResponseLFQueue *client_responses,
                            Exchange::MEMarketUpdateLFQueue *market_updates)
       : client_id_(client_id), outgoing_ogw_requests_(client_requests), incoming_ogw_responses_(client_responses),
-       
-         incoming_md_updates_(market_updates), logger_("trading_engine_" + std::to_string(client_id) + ".log"),
+        incoming_md_updates_(market_updates), logger_("trading_engine_" + std::to_string(client_id) + ".log"),
         feature_engine_(&logger_),
         position_keeper_(&logger_),
         order_manager_(&logger_, this, risk_manager_),

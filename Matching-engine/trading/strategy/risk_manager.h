@@ -1,139 +1,92 @@
-#pragma once 
+#pragma once
 
 #include "common/macros.h"
-
 #include "common/logging.h"
 
-#include  "position_keeper.h"
-
+#include "position_keeper.h"
 #include "om_order.h"
 
 using namespace Common;
 
-
 namespace Trading {
-    class OrderManager;
+  class OrderManager;
 
-    enum class RiskCheckResult : intt8_t {
+  enum class RiskCheckResult : int8_t {
+    INVALID = 0,
+    ORDER_TOO_LARGE = 1,
+    POSITION_TOO_LARGE = 2,
+    LOSS_TOO_LARGE = 3,
+    ALLOWED = 4
+  };
 
-        INVALID = 0,
-
-        ORDER_TOO_LARGE = 1,
-
-        POSITION_TOO_LARGE = 2,
-
-        LOSS_TOO_LARGE = 3,
-
-        ALLOWED = 4
-    };
-
-    inline auto riskCheckResultToString(RiskCheckResult result) {
-
-        switch(result) {
-
-            case RiskCheckResult::INVALID:
-
-                return "INVALID";
-
-            case RiskCheckResult::ORDER_TOO_LARGE:
-
-                return "ORDER_TOO_LARGE";
-
-            case RiskCheckResult::POSITION_TOO_LARGE:
-
-                return "POSITION_TOO_LARGE";
-
-            case RiskCheckResult::LOSS_TOO_LARGE:
-
-                return "LOSS_TOO_LARGE";
-        
-            case RiskCheckResult::ALLOWED:
-
-                return "ALLOWED";
-
-        }
-        return "";
+  inline auto riskCheckResultToString(RiskCheckResult result) {
+    switch (result) {
+      case RiskCheckResult::INVALID:
+        return "INVALID";
+      case RiskCheckResult::ORDER_TOO_LARGE:
+        return "ORDER_TOO_LARGE";
+      case RiskCheckResult::POSITION_TOO_LARGE:
+        return "POSITION_TOO_LARGE";
+      case RiskCheckResult::LOSS_TOO_LARGE:
+        return "LOSS_TOO_LARGE";
+      case RiskCheckResult::ALLOWED:
+        return "ALLOWED";
     }
 
-    struct RiskINfo {
+    return "";
+  }
 
-        cosnt PositionInfo *position_info_ = nullptr;
+  struct RiskInfo {
+    const PositionInfo *position_info_ = nullptr;
 
-        RiskCfg risk_cfg_;
+    RiskCfg risk_cfg_;
 
-        auto checkPreTradeRisk(Side side , Qty qty) const noexcept {
+    auto checkPreTradeRisk(Side side, Qty qty) const noexcept {
+      if (UNLIKELY(qty > risk_cfg_.max_order_size_))
+        return RiskCheckResult::ORDER_TOO_LARGE;
+      if (UNLIKELY(std::abs(position_info_->position_ + sideToValue(side) * static_cast<int32_t>(qty)) > static_cast<int32_t>(risk_cfg_.max_position_)))
+        return RiskCheckResult::POSITION_TOO_LARGE;
+      if (UNLIKELY(position_info_->total_pnl_ < risk_cfg_.max_loss_))
+        return RiskCheckResult::LOSS_TOO_LARGE;
 
-            if(UNLIKELY(qty > risk_cfg_.max_order_size_))
+      return RiskCheckResult::ALLOWED;
+    }
 
-                return RiskCheckResult::ORDER_TOO_LARGE;
+    auto toString() const {
+      std::stringstream ss;
+      ss << "RiskInfo" << "["
+         << "pos:" << position_info_->toString() << " "
+         << risk_cfg_.toString()
+         << "]";
 
-            if(UNLIKELY(std::abs(position_info_ ->position_ + sideToValue(side)*static_cast<int32_t>(qty))> static_cast<int32_t>(risk_cfg_.max_position)))
+      return ss.str();
+    }
+  };
 
-                return RiskCheckResult::POSITION_TOO_LARGE;
+  typedef std::array<RiskInfo, ME_MAX_TICKERS> TickerRiskInfoHashMap;
 
-            if(UNLIKELY(position_info_->total_pnl_ < risk_cfg_.max_loss_))
+  class RiskManager {
+  public:
+    RiskManager(Common::Logger *logger, const PositionKeeper *position_keeper, const TradeEngineCfgHashMap &ticker_cfg);
 
-                return RiskCheckResult::LOSS_TOO_LARGE;
+    auto checkPreTradeRisk(TickerId ticker_id, Side side, Qty qty) const noexcept {
+      return ticker_risk_.at(ticker_id).checkPreTradeRisk(side, qty);
+    }
 
-            return RiskCheckResult::ALLOWED;
+    RiskManager() = delete;
 
+    RiskManager(const RiskManager &) = delete;
 
-        }
-        
-        auto toString() const {
+    RiskManager(const RiskManager &&) = delete;
 
-            std::stringstream ss;
+    RiskManager &operator=(const RiskManager &) = delete;
 
-            ss << "RiskInfo" << "["
+    RiskManager &operator=(const RiskManager &&) = delete;
 
-            << "pos" << position_info_->toString() << " "
+  private:
+    std::string time_str_;
+    Common::Logger *logger_ = nullptr;
 
-            << risk_cfg_.toString()
-
-            << "]";
-
-            return ss.str();
-
-        }
-
-    };
-
-    typedef std::array<RiskInfo , ME_MAX_TICKERS> TickerRiskInfoHashMap;
-
-    class RiskManager{
-
-        public:
-
-            RiskManager(Common::Logger *logger, cosnt Positionkeeper *position_keeper, const TradeEngineCfgHashMap &ticker_cfg);
-
-            auto checkPreTradeRisk(TickerId ticker_id , Side side , Qty qty) const noexcept {
-
-                return ticker_risk_.at(ticker_id).checkPreTradeRisk(Side, qty);
-
-
-            }
-
-            RiskManager() = delete;
-
-            RiskManager(const RiskManger &) = delete;
-
-            RiskManager(const RiskManger &&) = delete;
-
-
-            RiskManager &operator = (const RiskManger &) = delete;
-
-            RiskManager &operator = (const RiskManger &&) = delete;
-
-            private:
-
-            std::string time_str_;
-
-            Common::Logger *logger_ = nullptr;
-
-            TickerRiskInfoHashMap ticker_risk_;
-    };
-
+    TickerRiskInfoHashMap ticker_risk_;
+  };
 }
-
-
-
