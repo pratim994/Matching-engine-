@@ -49,3 +49,8 @@ perf.data.old
 __pycache__/
 *.pyc
 .ipynb_checkpoints/
+
+# Python virtual environments
+.venv/
+venv/
+env/
